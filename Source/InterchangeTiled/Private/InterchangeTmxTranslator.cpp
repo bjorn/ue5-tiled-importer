@@ -64,9 +64,9 @@ bool UInterchangeTmxTranslator::Translate(UInterchangeBaseNodeContainer& BaseNod
 bool UInterchangeTmxTranslator::TranslateTileMap(FString Filename, UInterchangeBaseNodeContainer& BaseNodeContainer) const
 {
 
-	UClass* TileSetClass = UInterchangeTileMapNode::StaticClass();
+	UClass* TileMapClass = UInterchangeTileMapNode::StaticClass();
 
-	if (!ensure(TileSetClass))
+	if (!ensure(TileMapClass))
 	{
 		UE_LOG(LogInterchangeTiledImport, Warning, TEXT("Error importing TMX tile map: UInterchangeTileMapNode is unsupported."))
 
@@ -76,7 +76,7 @@ bool UInterchangeTmxTranslator::TranslateTileMap(FString Filename, UInterchangeB
 	FString DisplayLabel = FPaths::GetBaseFilename(Filename);
 	FString NodeUid("tmx:" + Filename);
 
-	UInterchangeTileMapNode* TileMapNode = NewObject<UInterchangeTileMapNode>(&BaseNodeContainer, TileSetClass);
+	UInterchangeTileMapNode* TileMapNode = NewObject<UInterchangeTileMapNode>(&BaseNodeContainer, TileMapClass);
 
 	if (!ensure(TileMapNode))
 	{
