@@ -16,8 +16,10 @@ jobs:
     runs-on: [self-hosted, ue5]
     strategy:
       fail-fast: false
+      # Add the minimum version (5.4.4) back once the runner has enough
+      # disk to cache both images.
       matrix:
-        ue-version: ["5.4.4", "5.8.3"]
+        ue-version: ["5.8.3"]
     env:
       DOCKER_HOST: unix:///run/user/1000/docker.sock
     steps:
