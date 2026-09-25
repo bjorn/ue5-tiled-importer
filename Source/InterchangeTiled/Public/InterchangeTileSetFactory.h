@@ -24,6 +24,11 @@ public:
 		return UPaperTileSet::StaticClass();
 	}
 
+	virtual EInterchangeFactoryAssetType GetFactoryAssetType() override
+	{
+		return EInterchangeFactoryAssetType::Custom;
+	}
+
 private:
 
 	virtual FImportAssetResult BeginImportAsset_GameThread(const FImportAssetObjectParams& Arguments) override;
