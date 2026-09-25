@@ -96,7 +96,7 @@ void UInterchangeTmxPipeline::ExecutePipeline(
 			ImportAssetParameters.bIsAutomated = true;
 
 			InterchangeManager.ImportAsset(
-				ContentImportPath,
+				ContentBasePath,
 				SourceData,
 				ImportAssetParameters
 			);
