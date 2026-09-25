@@ -45,3 +45,12 @@ jobs:
               -Plugin=/plugin/TiledImporter.uplugin \
               -Package=/out/TiledImporter \
               -TargetPlatforms=Linux
+
+      - name: Upload packaged plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: TiledImporter-UE${{ matrix.ue-version }}-linux
+          path: |
+            _out/TiledImporter/
+            !_out/TiledImporter/HostProject/
+          retention-days: 30
