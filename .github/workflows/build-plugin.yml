@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+      - 'test/**'
+      - 'ci-ue-builds'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-plugin:
+    name: Build plugin (UE ${{ matrix.ue-version }})
+    runs-on: [self-hosted, ue5]
+    strategy:
+      fail-fast: false
+      matrix:
+        ue-version: ["5.4.4", "5.8.3"]
+    env:
+      DOCKER_HOST: unix:///run/user/1000/docker.sock
+    steps:
+      - uses: actions/checkout@v4
+
+      # The UE dev images are ~80 GB each and this runner can only hold one
+      # at a time, so evict any other version before pulling.
+      - name: Free disk space
+        run: |
+          docker images --format '{{.Repository}}:{{.Tag}}' ghcr.io/epicgames/unreal-engine \
+            | grep -v ":dev-slim-${{ matrix.ue-version }}$" \
+            | xargs -r docker rmi -f || true
+
+      - name: Build plugin
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/_out"
+          docker run --rm -u 0 \
+            -v "$GITHUB_WORKSPACE:/plugin" \
+            -v "$GITHUB_WORKSPACE/_out:/out" \
+            ghcr.io/epicgames/unreal-engine:dev-slim-${{ matrix.ue-version }} \
+            /home/ue4/UnrealEngine/Engine/Build/BatchFiles/RunUAT.sh \
+              BuildPlugin \
+              -Plugin=/plugin/TiledImporter.uplugin \
+              -Package=/out/TiledImporter \
+              -TargetPlatforms=Linux
