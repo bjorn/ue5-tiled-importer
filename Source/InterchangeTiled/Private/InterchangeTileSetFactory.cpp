@@ -171,14 +171,22 @@ UTexture2D* UInterchangeTileSetFactory::LoadOrCreateTextureAsset(
 	ImportSettings->Filenames = Filenames;
 
 	TArray<UObject*> NewAssets = AssetToolsModule.Get().ImportAssetsAutomated(ImportSettings);
-	UObject* NewAsset = NewAssets[0];
-	Texture = Cast<UTexture2D>(NewAsset);
+
+	if (NewAssets.IsEmpty())
+	{
+		UE_LOG(LogInterchangeTiledImport, Warning, TEXT("Failed to import texture '%s'."), *TextureFilename);
+		return nullptr;
+	}
+
+	Texture = Cast<UTexture2D>(NewAssets[0]);
 
 	return Texture;
 }
 
 void UInterchangeTileSetFactory::PopulateTileMetadata(TArray<FXmlNode*> TilesetNodes, UPaperTileSet* TileSet)
 {
+	bool bWarnedUnsupportedShape = false;
+
 	for (const FXmlNode* Node : TilesetNodes)
 	{
 		if (Node->GetTag() == "tile")
@@ -191,35 +199,53 @@ void UInterchangeTileSetFactory::PopulateTileMetadata(TArray<FXmlNode*> TilesetN
 				continue;
 			}
 
-			const FXmlNode* ObjectNode = ObjectGroupNode->FindChildNode("object");
-
-			if (!ObjectNode)
-			{
-				continue;
-			}
-
 			FIntPoint TileSize = TileSet->GetTileSize();
 			double TileWidth = TileSize.X;
 			double TileHeight = TileSize.Y;
 
-			double TiledX = FCString::Atod(*ObjectNode->GetAttribute("x"));
-			double TiledY = FCString::Atod(*ObjectNode->GetAttribute("y"));
-			double BoxWidth = FCString::Atod(*ObjectNode->GetAttribute("width"));
-			double BoxHeight = FCString::Atod(*ObjectNode->GetAttribute("height"));
-
-			// Convert from Tiled coordinates (collision box top left) to
-			// Unreal coordinates (collision box center).
-			double UnrealX = TiledX - TileWidth / 2 + BoxWidth / 2;
-			double UnrealY = TiledY - TileHeight / 2 + BoxHeight / 2;
-
-			FVector2D RectanglePosition(UnrealX, UnrealY);
-			FVector2D RectangleSize(BoxWidth, BoxHeight);
-
 			FSpriteGeometryCollection CollisionData;
-			CollisionData.AddRectangleShape(
-				RectanglePosition,
-				RectangleSize
-			);
+			int32 ShapeCount = 0;
+
+			for (const FXmlNode* ObjectNode : ObjectGroupNode->GetChildrenNodes())
+			{
+				if (ObjectNode->GetTag() != "object")
+				{
+					continue;
+				}
+
+				if (ObjectNode->FindChildNode("polygon")
+					|| ObjectNode->FindChildNode("polyline")
+					|| ObjectNode->FindChildNode("ellipse")
+					|| ObjectNode->FindChildNode("point"))
+				{
+					bWarnedUnsupportedShape = true;
+					continue;
+				}
+
+				double TiledX = FCString::Atod(*ObjectNode->GetAttribute("x"));
+				double TiledY = FCString::Atod(*ObjectNode->GetAttribute("y"));
+				double BoxWidth = FCString::Atod(*ObjectNode->GetAttribute("width"));
+				double BoxHeight = FCString::Atod(*ObjectNode->GetAttribute("height"));
+
+				// Convert from Tiled coordinates (collision box top left) to
+				// Unreal coordinates (collision box center).
+				double UnrealX = TiledX - TileWidth / 2 + BoxWidth / 2;
+				double UnrealY = TiledY - TileHeight / 2 + BoxHeight / 2;
+
+				FVector2D RectanglePosition(UnrealX, UnrealY);
+				FVector2D RectangleSize(BoxWidth, BoxHeight);
+
+				CollisionData.AddRectangleShape(
+					RectanglePosition,
+					RectangleSize
+				);
+				++ShapeCount;
+			}
+
+			if (ShapeCount == 0)
+			{
+				continue;
+			}
 
 			FPaperTileMetadata TileMetadata;
 			TileMetadata.CollisionData = CollisionData;
@@ -227,5 +253,14 @@ void UInterchangeTileSetFactory::PopulateTileMetadata(TArray<FXmlNode*> TilesetN
 			FPaperTileMetadata* CurrentTileMetadata = TileSet->GetMutableTileMetadata(TileId);
 			*CurrentTileMetadata = TileMetadata;
 		}
+	}
+
+	if (bWarnedUnsupportedShape)
+	{
+		UE_LOG(
+			LogInterchangeTiledImport,
+			Warning,
+			TEXT("Only rectangle collision objects are supported; other shapes were skipped.")
+		);
 	}
 }
