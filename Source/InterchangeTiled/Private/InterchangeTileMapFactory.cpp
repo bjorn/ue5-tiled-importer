@@ -99,7 +99,7 @@ TArray<FTilesetImportInfo> UInterchangeTileMapFactory::LoadTileSets(const FSetup
 			TSet<FName> PackageNames{ FName(*ObjectPath) };
 
 			TArray<FAssetData> AssetData;
-			FARCompiledFilter Filter;
+			FARFilter Filter;
 			Filter.ClassPaths = ClassPaths;
 			Filter.PackageNames = PackageNames;
 			AssetRegistryModule.Get().GetAssets(Filter, AssetData);
