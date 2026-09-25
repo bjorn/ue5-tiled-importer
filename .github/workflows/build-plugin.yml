@@ -23,7 +23,7 @@ jobs:
     env:
       DOCKER_HOST: unix:///run/user/1000/docker.sock
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The UE dev images are ~80 GB each and this runner can only hold one
       # at a time, so evict any other version before pulling.
@@ -47,7 +47,7 @@ jobs:
               -TargetPlatforms=Linux
 
       - name: Upload packaged plugin
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TiledImporter-UE${{ matrix.ue-version }}-linux
           path: |
