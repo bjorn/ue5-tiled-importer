@@ -16,20 +16,10 @@ jobs:
     runs-on: [self-hosted, ue5]
     strategy:
       fail-fast: false
-      # Add the minimum version (5.4.4) back once the runner has enough
-      # disk to cache both images.
       matrix:
-        ue-version: ["5.8.3"]
+        ue-version: ["5.4.4", "5.8.3"]
     steps:
       - uses: actions/checkout@v7
-
-      # The UE dev images are ~80 GB each and this runner can only hold one
-      # at a time, so evict any other version before pulling.
-      - name: Free disk space
-        run: |
-          docker images --format '{{.Repository}}:{{.Tag}}' ghcr.io/epicgames/unreal-engine \
-            | grep -v ":dev-slim-${{ matrix.ue-version }}$" \
-            | xargs -r docker rmi -f || true
 
       - name: Build plugin
         run: |
